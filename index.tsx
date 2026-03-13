@@ -2,71 +2,76 @@
 
 /*
  * Vencord, a Discord client mod
- * Copyright (c) 2025 Vendicated and contributors
+ * Custom call button plugin
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { definePluginSettings, migratePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
+import { definePluginSettings } from "@api/Settings";
 
 const settings = definePluginSettings({
-    removeCloseButton: {
-        type: OptionType.BOOLEAN,
-        default: true,
-        description: "Remove redundant close button, which might actually break plugin if accidentally pressed",
-        restartNeeded: true,
-        hidden: true
-    }
+  showButton: {
+    type: OptionType.BOOLEAN,
+    default: true,
+    description: "Show custom button next to mute button in calls",
+  },
 });
 
-// By default Discord only seems too displays 'Staging' so we map the names ourself
-const names: Record<string, string> = {
-    stable: "Stable",
-    ptb: "PTB",
-    canary: "Canary",
-    staging: "Staging"
-};
-
-// Useless for the normal User, but useful for me
-migratePluginSettings("DiscordDevBanner", "devBanner");
-
 export default definePlugin({
-    name: "MigssCU",
-    description: "testing",
-    authors: [
-        // Import from EquicordDevs for Equicord
-        { name: "Migssgpt", id: 929208515883569182n },
-    ],
-    settings,
+  name: "Migss-Priv",
+  description: "Adds a small button next to the mute button during calls",
+  authors: [
+    { name: "Migssgpt", id: 899938384120807454n },
+  ],
+  settings,
 
-    patches: [
-        {
-            find: '"isHideDevBanner"',
-            replacement: [
-                {
-                    match: '"staging"===window.GLOBAL_ENV.RELEASE_CHANNEL',
-                    replace: "true"
-                },
-                {
-                    predicate: () => settings.store.removeCloseButton,
-                    match: /(\i=\(\)=>)\(.*?\}\);/,
-                    replace: "$1null;",
-                },
-                {
-                    match: /\i\.\i\.format\(.{0,15},{buildNumber:(.{0,10})}\)/,
-                    replace: "$self.transform($1)"
-                }
-            ]
+  onStart() {
+    if (!settings.store.showButton) return;
+
+    // Attempt to patch the call controls
+    const CallControlsModule = BdApi.findModuleByDisplayName?.("CallControls");
+    if (!CallControlsModule) return;
+
+    this.patch = BdApi.monkeyPatch(CallControlsModule.prototype, "render", {
+      after: (args: any, res: any) => {
+        try {
+          if (!res?.props?.children) return;
+
+          const children = res.props.children;
+
+          const muteIndex = children.findIndex(
+            (child: any) => child?.type?.displayName === "MuteButton"
+          );
+
+          if (muteIndex !== -1) {
+            children.splice(muteIndex + 1, 0, (
+              <button
+                key="migss-priv-button"
+                style={{
+                  marginLeft: "8px",
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  border: "none",
+                  backgroundColor: "#7289da",
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
+                onClick={() => console.log("Migss-Priv button clicked!")}
+                title="Migss-Priv"
+              >
+                🎵
+              </button>
+            ));
+          }
+        } catch (e) {
+          console.error("Failed to add Migss-Priv button", e);
         }
-    ],
+      }
+    });
+  },
 
-    transform(buildNumber: string) {
-        const releaseChannel: string = window.GLOBAL_ENV.RELEASE_CHANNEL;
-
-        if (names[releaseChannel]) {
-            return `${names[releaseChannel]} ${buildNumber}`;
-        } else {
-            return `${releaseChannel.charAt(0).toUpperCase() + releaseChannel.slice(1)} ${buildNumber}`;
-        }
-    },
+  onStop() {
+    this.patch?.();
+  },
 });
