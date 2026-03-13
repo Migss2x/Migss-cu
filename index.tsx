@@ -2,7 +2,7 @@
 
 /*
  * Vencord, a Discord client mod
- * Test Plugin
+ * Migss-Test Overlay
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -18,7 +18,7 @@ export default definePlugin({
   overlay: null as HTMLDivElement | null,
 
   onStart() {
-    // Create a simple overlay
+    // Create a simple overlay box
     const overlay = document.createElement("div");
     overlay.innerText = "✅ Migss-Test Plugin is running!";
     Object.assign(overlay.style, {
