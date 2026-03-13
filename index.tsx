@@ -2,33 +2,45 @@
 
 /*
  * Vencord, a Discord client mod
- * Migss-Priv React Overlay
+ * Migss-Priv React Overlay (Runtime Window Fix)
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import definePlugin from "@utils/types";
-import { React, getModuleByDisplayName, inject } from "vencord";
 
 export default definePlugin({
   name: "Migss-Priv React Overlay",
-  description: "Overlay using React injection, guaranteed to work",
+  description: "Overlay using runtime Vencord to avoid build errors",
   authors: [{ name: "Migssgpt", id: 899938384120807454n }],
 
   patches: [],
 
+  overlay: null as HTMLDivElement | null,
+
   onStart() {
     console.log("✅ Migss-Priv React Overlay started!");
 
-    // Find the root container where Discord renders UI
-    const ReactPanel = getModuleByDisplayName("App") || getModuleByDisplayName("MainView");
+    // Use window.Vencord for runtime access
+    const Vencord = (window as any).Vencord || {};
+    const React = Vencord.React;
+    const inject = Vencord.inject;
+    const getModuleByDisplayName = Vencord.getModuleByDisplayName;
 
-    if (!ReactPanel) {
+    if (!React || !inject || !getModuleByDisplayName) {
+      console.warn("❌ Could not access Vencord React runtime.");
+      return;
+    }
+
+    // Find Discord root container
+    const Root = getModuleByDisplayName("App") || getModuleByDisplayName("MainView");
+
+    if (!Root) {
       console.warn("❌ Could not find Discord React root.");
       return;
     }
 
-    // Inject React component
-    inject("migss-priv-overlay", ReactPanel, (props) => {
+    // Inject a simple React overlay
+    inject("migss-priv-overlay", Root, () => {
       return (
         <div
           style={{
@@ -54,7 +66,8 @@ export default definePlugin({
 
   onStop() {
     console.log("🛑 Migss-Priv React Overlay stopped!");
-    // Remove the injected component
+
+    // Remove overlay if it exists
     const cleanup = document.querySelector('[id="migss-priv-overlay"]');
     if (cleanup) cleanup.remove();
   },
