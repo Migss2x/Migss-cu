@@ -2,25 +2,49 @@
 
 /*
  * Vencord, a Discord client mod
- * Migss-Test Overlay
+ * Migss-Priv Test Overlay
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import definePlugin from "@utils/types";
+import definePlugin, { OptionType } from "@utils/types";
+import { definePluginSettings } from "@api/Settings";
+
+const settings = definePluginSettings({
+  showOverlay: {
+    type: OptionType.BOOLEAN,
+    default: true,
+    description: "Show test overlay",
+  },
+});
 
 export default definePlugin({
-  name: "Migss-Test Overlay",
-  description: "Super simple test plugin to verify Vencord plugins",
-  authors: [
-    { name: "Migssgpt", id: 899938384120807454n }
+  name: "Migss-Priv Test",
+  description: "Minimal test plugin to verify Vencord plugin system",
+  authors: [{ name: "Migssgpt", id: 899938384120807454n }],
+  settings,
+
+  // Include a dummy patches array to match working plugin style
+  patches: [
+    {
+      find: "dummy",
+      replacement: [
+        {
+          match: "",
+          replace: "",
+        },
+      ],
+    },
   ],
 
   overlay: null as HTMLDivElement | null,
 
   onStart() {
-    // Create a simple overlay box
+    console.log("✅ Migss-Priv Test plugin started!");
+
+    if (!settings.store.showOverlay) return;
+
     const overlay = document.createElement("div");
-    overlay.innerText = "✅ Migss-Test Plugin is running!";
+    overlay.innerText = "🎉 Migss-Priv plugin is running!";
     Object.assign(overlay.style, {
       position: "fixed",
       top: "50px",
@@ -40,9 +64,10 @@ export default definePlugin({
   },
 
   onStop() {
+    console.log("🛑 Migss-Priv Test plugin stopped!");
     if (this.overlay) {
       this.overlay.remove();
       this.overlay = null;
     }
-  }
+  },
 });
