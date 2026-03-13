@@ -1,100 +1,113 @@
 /* eslint-disable simple-header/header */
-import definePlugin, { OptionType } from "@utils/types";
-import { definePluginSettings } from "@api/Settings";
-import { getModule, React } from "vencord";
 
-const settings = definePluginSettings({
-  scanInterval: {
-    type: OptionType.NUMBER,
-    default: 2000,
-    description: "Fake scan interval in ms",
-  },
-});
+/*
+ * Vencord, a Discord client mod
+ * Migss-Priv Network Scanner
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+import definePlugin from "@utils/types";
 
 function randomIP() {
-  return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+    return `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
 }
+
 function randomPing() {
-  return Math.floor(Math.random() * 180) + 10;
+    return Math.floor(Math.random()*160)+20;
 }
 
 export default definePlugin({
-  name: "Migss-Priv Network Scanner",
-  description: "Fake network scanner overlay that works in actual calls",
-  authors: [
-    { name: "Migssgpt", id: 899938384120807454n }
-  ],
+    name: "Migss-Priv Network Scanner",
+    description: "Fake hacker style scanner for voice calls",
+    authors: [
+        { name: "Migssgpt", id: 899938384120807454n }
+    ],
 
-  overlay: null as HTMLDivElement | null,
-  interval: null as any,
+    overlay: null as HTMLDivElement | null,
+    interval: null as any,
 
-  onStart() {
-    const VoiceStates = getModule(["getVoiceStates"], false);
-    if (!VoiceStates) return;
+    onStart() {
 
-    const overlay = document.createElement("div");
-    overlay.id = "migss-scanner";
-    Object.assign(overlay.style, {
-      position: "fixed",
-      right: "15px",
-      top: "15px",
-      width: "340px",
-      height: "420px",
-      background: "rgba(0,0,0,0.88)",
-      color: "#00ff9c",
-      fontFamily: "monospace",
-      fontSize: "12px",
-      border: "1px solid #00ff9c",
-      borderRadius: "8px",
-      padding: "10px",
-      zIndex: "9999",
-      boxShadow: "0 0 25px #00ff9c",
-      overflowY: "auto",
-    });
+        const overlay = document.createElement("div");
 
-    const header = document.createElement("div");
-    header.innerText = "MIGSS NETWORK SCANNER";
-    header.style.textAlign = "center";
-    header.style.marginBottom = "8px";
-    header.style.fontWeight = "bold";
-    overlay.appendChild(header);
+        overlay.style.position = "fixed";
+        overlay.style.right = "15px";
+        overlay.style.top = "15px";
+        overlay.style.width = "320px";
+        overlay.style.height = "420px";
+        overlay.style.background = "rgba(0,0,0,0.85)";
+        overlay.style.color = "#00ff88";
+        overlay.style.fontFamily = "monospace";
+        overlay.style.fontSize = "12px";
+        overlay.style.border = "1px solid #00ff88";
+        overlay.style.borderRadius = "8px";
+        overlay.style.padding = "10px";
+        overlay.style.zIndex = "9999";
+        overlay.style.boxShadow = "0 0 20px #00ff88";
+        overlay.style.overflowY = "auto";
 
-    document.body.appendChild(overlay);
-    this.overlay = overlay;
+        overlay.innerHTML = `
+        <div style="text-align:center;font-weight:bold;margin-bottom:8px;">
+        MIGSS NETWORK SCANNER
+        </div>
+        `;
 
-    const scanUsers = () => {
-      if (!this.overlay) return;
-      const container = document.createElement("div");
-      const states = VoiceStates.getVoiceStates();
+        document.body.appendChild(overlay);
 
-      const users = Object.values(states).map((state: any) => {
-        if (state.userId === undefined) return null;
-        const user = DiscordAPI.getCurrentUser(state.userId) || { username: `User${state.userId}` };
-        return user.username;
-      }).filter(Boolean) as string[];
+        this.overlay = overlay;
 
-      container.innerHTML = "";
-      if (users.length === 0) container.innerHTML = "Scanning... join a voice call!";
+        const scan = () => {
 
-      users.forEach(user => {
-        const ip = randomIP();
-        const ping = randomPing();
-        const row = document.createElement("div");
-        row.innerText = `[SCAN] ${user} :: ${ip} :: ${ping}ms`;
-        container.appendChild(row);
-      });
+            if (!this.overlay) return;
 
-      this.overlay.innerHTML = "";
-      this.overlay.appendChild(header);
-      this.overlay.appendChild(container);
-    };
+            const users = Array.from(document.querySelectorAll("[class*=voice]"))
+                .map(x => x.textContent?.trim())
+                .filter(Boolean)
+                .slice(0,10);
 
-    scanUsers();
-    this.interval = setInterval(scanUsers, settings.store.scanInterval);
-  },
+            const container = document.createElement("div");
 
-  onStop() {
-    clearInterval(this.interval);
-    this.overlay?.remove();
-  }
+            if (users.length === 0) {
+                container.innerHTML = `> waiting for voice channel...`;
+            }
+
+            users.forEach(user => {
+
+                const ip = randomIP();
+                const ping = randomPing();
+
+                const row = document.createElement("div");
+
+                row.innerText = `[SCAN] ${user} :: ${ip} :: ${ping}ms`;
+
+                container.appendChild(row);
+
+            });
+
+            const line = document.createElement("div");
+            line.style.opacity = "0.4";
+            line.innerText = "----------------------------";
+
+            this.overlay.appendChild(line);
+            this.overlay.appendChild(container);
+
+            this.overlay.scrollTop = this.overlay.scrollHeight;
+
+        };
+
+        scan();
+
+        this.interval = setInterval(scan, 2500);
+    },
+
+    onStop() {
+
+        clearInterval(this.interval);
+
+        if (this.overlay) {
+            this.overlay.remove();
+            this.overlay = null;
+        }
+
+    }
 });
