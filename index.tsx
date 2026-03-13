@@ -1,49 +1,20 @@
 /* eslint-disable simple-header/header */
-
-/*
- * Vencord, a Discord client mod
- * Migss-Priv Overlay Test
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
-import definePlugin, { OptionType } from "@utils/types";
-import { definePluginSettings } from "@api/Settings";
-
-const settings = definePluginSettings({
-  dummySetting: {
-    type: OptionType.BOOLEAN,
-    default: true,
-    description: "Dummy setting for plugin",
-  },
-});
+import definePlugin from "@utils/types";
 
 export default definePlugin({
-  name: "Migss-Priv Overlay Test",
-  description: "Minimal working overlay to verify plugin is running",
+  name: "Migss-Priv Test",
+  description: "Minimal console + overlay test plugin",
   authors: [{ name: "Migssgpt", id: 899938384120807454n }],
-  settings,
-
-  patches: [
-    {
-      // dummy patch so structure matches working plugin
-      find: "dummy",
-      replacement: [
-        {
-          match: "",
-          replace: "",
-        },
-      ],
-    },
-  ],
 
   overlay: null as HTMLDivElement | null,
 
   onStart() {
-    console.log("✅ Migss-Priv Overlay Test plugin started!");
+    console.log("✅ Migss-Priv plugin started!");
+    alert("✅ Migss-Priv plugin started!");
 
-    // Always create overlay
+    // Create overlay
     const overlay = document.createElement("div");
-    overlay.innerText = "🎉 Migss-Priv plugin is running!";
+    overlay.innerText = "🎉 Migss-Priv plugin running!";
     Object.assign(overlay.style, {
       position: "fixed",
       top: "50px",
@@ -63,10 +34,8 @@ export default definePlugin({
   },
 
   onStop() {
-    console.log("🛑 Migss-Priv Overlay Test plugin stopped!");
-    if (this.overlay) {
-      this.overlay.remove();
-      this.overlay = null;
-    }
-  },
+    console.log("🛑 Migss-Priv plugin stopped!");
+    alert("🛑 Migss-Priv plugin stopped!");
+    if (this.overlay) this.overlay.remove();
+  }
 });
