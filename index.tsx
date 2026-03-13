@@ -1,155 +1,100 @@
 /* eslint-disable simple-header/header */
-
-/*
- * Vencord, a Discord client mod
- * Migss-Priv Network Scanner
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
 import definePlugin, { OptionType } from "@utils/types";
 import { definePluginSettings } from "@api/Settings";
+import { getModule, React } from "vencord";
 
 const settings = definePluginSettings({
-    enableScanner: {
-        type: OptionType.BOOLEAN,
-        default: true,
-        description: "Enable the fake network scanner overlay"
-    },
-
-    scanInterval: {
-        type: OptionType.NUMBER,
-        default: 2500,
-        description: "Interval between scans (ms)"
-    }
+  scanInterval: {
+    type: OptionType.NUMBER,
+    default: 2000,
+    description: "Fake scan interval in ms",
+  },
 });
 
 function randomIP() {
-    return `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+  return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
 }
-
 function randomPing() {
-    return Math.floor(Math.random() * 180) + 10;
+  return Math.floor(Math.random() * 180) + 10;
 }
 
 export default definePlugin({
-    name: "Migss-Priv/NS",
-    description: "VCNS",
-    authors: [
-        { name: "Migssgpt", id: 899938384120807454n }
-    ],
+  name: "Migss-Priv Network Scanner",
+  description: "Fake network scanner overlay that works in actual calls",
+  authors: [
+    { name: "Migssgpt", id: 899938384120807454n }
+  ],
 
-    settings,
+  overlay: null as HTMLDivElement | null,
+  interval: null as any,
 
-    overlay: null as HTMLDivElement | null,
-    interval: null as any,
+  onStart() {
+    const VoiceStates = getModule(["getVoiceStates"], false);
+    if (!VoiceStates) return;
 
-    onStart() {
+    const overlay = document.createElement("div");
+    overlay.id = "migss-scanner";
+    Object.assign(overlay.style, {
+      position: "fixed",
+      right: "15px",
+      top: "15px",
+      width: "340px",
+      height: "420px",
+      background: "rgba(0,0,0,0.88)",
+      color: "#00ff9c",
+      fontFamily: "monospace",
+      fontSize: "12px",
+      border: "1px solid #00ff9c",
+      borderRadius: "8px",
+      padding: "10px",
+      zIndex: "9999",
+      boxShadow: "0 0 25px #00ff9c",
+      overflowY: "auto",
+    });
 
-        if (!settings.store.enableScanner) return;
+    const header = document.createElement("div");
+    header.innerText = "MIGSS NETWORK SCANNER";
+    header.style.textAlign = "center";
+    header.style.marginBottom = "8px";
+    header.style.fontWeight = "bold";
+    overlay.appendChild(header);
 
-        const overlay = document.createElement("div");
+    document.body.appendChild(overlay);
+    this.overlay = overlay;
 
-        overlay.id = "migss-scanner";
+    const scanUsers = () => {
+      if (!this.overlay) return;
+      const container = document.createElement("div");
+      const states = VoiceStates.getVoiceStates();
 
-        overlay.style.position = "fixed";
-        overlay.style.right = "15px";
-        overlay.style.top = "15px";
-        overlay.style.width = "340px";
-        overlay.style.height = "420px";
-        overlay.style.background = "rgba(0,0,0,0.88)";
-        overlay.style.color = "#00ff9c";
-        overlay.style.fontFamily = "monospace";
-        overlay.style.fontSize = "12px";
-        overlay.style.border = "1px solid #00ff9c";
-        overlay.style.borderRadius = "8px";
-        overlay.style.padding = "10px";
-        overlay.style.zIndex = "9999";
-        overlay.style.boxShadow = "0 0 25px #00ff9c";
-        overlay.style.overflowY = "auto";
+      const users = Object.values(states).map((state: any) => {
+        if (state.userId === undefined) return null;
+        const user = DiscordAPI.getCurrentUser(state.userId) || { username: `User${state.userId}` };
+        return user.username;
+      }).filter(Boolean) as string[];
 
-        const header = document.createElement("div");
-        header.innerText = "MIGSS NETWORK SCANNER";
-        header.style.textAlign = "center";
-        header.style.marginBottom = "8px";
-        header.style.fontWeight = "bold";
+      container.innerHTML = "";
+      if (users.length === 0) container.innerHTML = "Scanning... join a voice call!";
 
-        overlay.appendChild(header);
+      users.forEach(user => {
+        const ip = randomIP();
+        const ping = randomPing();
+        const row = document.createElement("div");
+        row.innerText = `[SCAN] ${user} :: ${ip} :: ${ping}ms`;
+        container.appendChild(row);
+      });
 
-        const toggle = document.createElement("button");
-        toggle.innerText = "HIDE";
-        toggle.style.width = "100%";
-        toggle.style.marginBottom = "8px";
-        toggle.style.background = "#001b12";
-        toggle.style.border = "1px solid #00ff9c";
-        toggle.style.color = "#00ff9c";
-        toggle.style.cursor = "pointer";
+      this.overlay.innerHTML = "";
+      this.overlay.appendChild(header);
+      this.overlay.appendChild(container);
+    };
 
-        toggle.onclick = () => {
-            overlay.style.display = overlay.style.display === "none" ? "block" : "none";
-        };
+    scanUsers();
+    this.interval = setInterval(scanUsers, settings.store.scanInterval);
+  },
 
-        overlay.appendChild(toggle);
-
-        document.body.appendChild(overlay);
-
-        this.overlay = overlay;
-
-        const scanUsers = () => {
-
-            if (!this.overlay) return;
-
-            const container = document.createElement("div");
-
-            const voiceUsers = document.querySelectorAll("[class*=voiceUser]");
-
-            const users: string[] = [];
-
-            voiceUsers.forEach((node: any) => {
-                const name = node.innerText;
-                if (name) users.push(name);
-            });
-
-            if (users.length === 0) {
-                container.innerHTML = `<div>Scanning voice channel...</div>`;
-            }
-
-            users.forEach(user => {
-
-                const ip = randomIP();
-                const ping = randomPing();
-
-                const row = document.createElement("div");
-
-                row.innerText =
-                    `[SCAN] ${user} :: ${ip} :: ${ping}ms`;
-
-                container.appendChild(row);
-
-            });
-
-            const scanLine = document.createElement("div");
-            scanLine.innerText = "---------------------------";
-            scanLine.style.opacity = "0.4";
-
-            this.overlay.appendChild(scanLine);
-            this.overlay.appendChild(container);
-
-            this.overlay.scrollTop = this.overlay.scrollHeight;
-
-        };
-
-        scanUsers();
-
-        this.interval = setInterval(scanUsers, settings.store.scanInterval);
-    },
-
-    onStop() {
-
-        clearInterval(this.interval);
-
-        if (this.overlay) {
-            this.overlay.remove();
-            this.overlay = null;
-        }
-    }
+  onStop() {
+    clearInterval(this.interval);
+    this.overlay?.remove();
+  }
 });
