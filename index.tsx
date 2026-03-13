@@ -2,25 +2,23 @@
 
 /*
  * Vencord, a Discord client mod
- * Migss-Priv React Overlay (Runtime Window Fix)
+ * Migss-Priv React Overlay
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import definePlugin from "@utils/types";
 
 export default definePlugin({
-  name: "Migss-Priv React Overlay",
-  description: "Overlay using runtime Vencord to avoid build errors",
+  name: "Migss-Priv Overlay",
+  description: "Shows a simple React overlay to confirm the plugin works",
   authors: [{ name: "Migssgpt", id: 899938384120807454n }],
-
-  patches: [],
 
   overlay: null as HTMLDivElement | null,
 
   onStart() {
-    console.log("✅ Migss-Priv React Overlay started!");
+    console.log("✅ Migss-Priv Overlay started!");
 
-    // Use window.Vencord for runtime access
+    // Runtime-safe access to Vencord React and inject
     const Vencord = (window as any).Vencord || {};
     const React = Vencord.React;
     const inject = Vencord.inject;
@@ -31,15 +29,14 @@ export default definePlugin({
       return;
     }
 
-    // Find Discord root container
+    // Get Discord root container
     const Root = getModuleByDisplayName("App") || getModuleByDisplayName("MainView");
-
     if (!Root) {
       console.warn("❌ Could not find Discord React root.");
       return;
     }
 
-    // Inject a simple React overlay
+    // Inject React overlay
     inject("migss-priv-overlay", Root, () => {
       return (
         <div
@@ -58,14 +55,14 @@ export default definePlugin({
             boxShadow: "0 0 20px #00ff9c",
           }}
         >
-          🎉 Migss-Priv React Overlay Active!
+          🎉 Migss-Priv Overlay Active!
         </div>
       );
     });
   },
 
   onStop() {
-    console.log("🛑 Migss-Priv React Overlay stopped!");
+    console.log("🛑 Migss-Priv Overlay stopped!");
 
     // Remove overlay if it exists
     const cleanup = document.querySelector('[id="migss-priv-overlay"]');
